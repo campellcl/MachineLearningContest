@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 
@@ -37,7 +38,7 @@ def main(debug):
     :param debug: A flag indicating to what degree debug information should be printed.
     :return:
     """
-    if debug:
+    if debug is Verbosity.verbose:
         print("Beginning Classification Task With Debug Verbose:")
         print("Beginning KNN:")
     else:
@@ -45,27 +46,41 @@ def main(debug):
     # Train KNN:
     knn = KNeighborsClassifier(n_neighbors=10, p=2, metric='minkowski')
     knn.fit(x_train, y_train)
-    plot_decision_regions(x_train, y_train, classifier=knn)
-    plt.xlabel('x_1')
-    plt.ylabel('x_2')
-    plt.legend()
-    plt.show()
-
+    y_hat = knn.predict(x_test)
+    if debug is not Verbosity.no_clf_plots or Verbosity.silent:
+        plot_decision_regions(x_test, y_test, classifier=knn)
+        plt.title('KNN Decision Regions')
+        plt.xlabel('x_1')
+        plt.ylabel('x_2')
+        plt.legend()
+        plt.show()
+    if debug is not Verbosity.silent:
+        acc_score = accuracy_score(y_true=y_test, y_pred=y_hat)
+        print("KNN Accuracy: %.1f%%" %(100 * acc_score))
 if __name__ == '__main__':
     # Specify global unique debug configurations for use with application:
     @unique
     class Verbosity(Enum):
-        verbose_debug = 1
-        debug = 2
-        silent = 3
-    # Set global debug flag:
-    debug = Verbosity.verbose_debug
+        silent = 1
+        verbose = 2
+        clf_accuracy_only = 3
+        no_clf_plots = 4
+    # Specify list of classifiers to perform:
+    @unique
+    class Classifiers(Enum):
+        knn = 1
+        perceptron = 2
+        adaline = 3
+
+    # Set global runtime flags:
+    debug = Verbosity.verbose
+    clfs = [Classifiers.knn, Classifiers.perceptron]
 
     # Read training data:
     df_train = pd.read_csv('kaggle_01_train.csv', index_col='Id')
     # Read testing data:
     test = pd.read_csv('kaggle_01_test.csv', index_col='Id')
-    if debug is Verbosity.verbose_debug:
+    if debug is Verbosity.verbose:
         print("Training Data Dimensionality: %s" % (df_train.shape,))
         print("Testing Data Dimensionality: %s" % (test.shape,))
     # Partition into x and y:
@@ -82,7 +97,7 @@ if __name__ == '__main__':
     plt.show()
     # Partition Data into Train, Test Split:
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=1)
-    if debug is Verbosity.verbose_debug:
+    if debug is Verbosity.verbose:
         print("Training Data 'x_train' Subset Dimensionality: %s" % (x_train.shape,))
         print("Training Data 'y_train' Subset Dimensionality: %s" % (y_train.shape,))
         print("Testing Data 'x_test' Subset Dimensionality: %s" % (x_test.shape,))
