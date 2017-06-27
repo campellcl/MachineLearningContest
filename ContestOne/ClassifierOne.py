@@ -17,6 +17,14 @@ __author__ = "Chris Campell"
 __version__ = "6/26/2017"
 
 def plot_decision_regions(X, y, classifier, resolution=0.02):
+    """
+    plot_decision_Regions -Plots the decision regions for a classifier along with the sample data.
+    :param X: The sample data to be plotted.
+    :param y: The target labels of the sample data to be plotted.
+    :param classifier: An instance of a classifier object which will be performing the classification.
+    :param resolution: TODO: what is this?
+    :return:
+    """
     # setup marker generator and color map
     markers = ('s', 'x', 'o', '^', 'v')
     colors = ('red', 'blue', 'lightgreen', 'gray', 'cyan')
