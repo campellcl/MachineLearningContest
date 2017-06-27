@@ -4,6 +4,8 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import GridSearchCV
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 
@@ -40,7 +42,7 @@ def main(debug):
     """
     if debug is Verbosity.verbose:
         print("Beginning Classification Task With Debug Verbose:")
-        print("Beginning KNN:")
+        print("Beginning KNN (n_neighbors=10, dist=Euclidean):")
     else:
         print("Beginning Classification Task With Debug Disabled:")
     # Train KNN:
@@ -57,6 +59,35 @@ def main(debug):
     if debug is not Verbosity.silent:
         acc_score = accuracy_score(y_true=y_test, y_pred=y_hat)
         print("KNN Accuracy: %.1f%%" %(100 * acc_score))
+    # GridSearch KNN on validation set:
+    knn_pipe = Pipeline([('clf', KNeighborsClassifier(p=2, metric='minkowski'))])
+    param_range = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    knn_param_grid = [{'clf__n_neighbors': param_range}]
+    if debug is Verbosity.verbose:
+        print("KNN Possible Estimator Parameters:")
+        print(knn_pipe.get_params().keys())
+    knn_gs = GridSearchCV(estimator=knn_pipe, param_grid=knn_param_grid, scoring='accuracy', cv=10)
+    knn_gs = knn_gs.fit(x_train, y_train)
+    print("GridSearch KNN Accuracy (Validation Set): %.1f%%" %(100 * knn_gs.best_score_))
+    print("GridSearch KNN Best Params (Validation Set):")
+    print(knn_gs.best_params_)
+    plot_decision_regions(x_test, y_test, classifier=knn_gs)
+    plt.title('KNN GridSearchCV Decision Regions (Validation Set)')
+    plt.xlabel('x_1')
+    plt.ylabel('x_2')
+    plt.legend()
+    plt.show()
+    # GridSearch KNN on withheld testing data:
+    knn_gs = GridSearchCV(estimator=knn_pipe, param_grid=knn_param_grid, scoring='accuracy', cv=10)
+    knn_gs = knn_gs.fit(x, y)
+    y_eval = knn_gs.predict(x_eval)
+    print("GridSearch KNN Accuracy (Test Set): %.1f%%" %(100 * knn_gs.best_score_))
+    print("GridSearch KNN Best Params (Test Set):")
+    print(knn_gs.best_params_)
+    # Write prediction to file for upload to kaggle:
+    df_out = pd.DataFrame(data=y_eval, index=df_test.index, columns=['Prediction'])
+    df_out.to_csv('kaggle_01_submission_01.csv')
+
 if __name__ == '__main__':
     # Specify global unique debug configurations for use with application:
     @unique
@@ -79,13 +110,14 @@ if __name__ == '__main__':
     # Read training data:
     df_train = pd.read_csv('kaggle_01_train.csv', index_col='Id')
     # Read testing data:
-    test = pd.read_csv('kaggle_01_test.csv', index_col='Id')
+    df_test = pd.read_csv('kaggle_01_test.csv', index_col='Id')
     if debug is Verbosity.verbose:
         print("Training Data Dimensionality: %s" % (df_train.shape,))
-        print("Testing Data Dimensionality: %s" % (test.shape,))
+        print("Testing Data Dimensionality: %s" % (df_test.shape,))
     # Partition into x and y:
     x = df_train[['x_1', 'x_2']].values
     y = df_train['y'].values
+    x_eval = df_test[['x_1', 'x_2']].values
     # Visualize the Data:
     index = y > 0
     plt.scatter(x[index, 0], x[index, 1], label='positive')
